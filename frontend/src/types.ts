@@ -116,7 +116,6 @@ export interface AgentPermissions {
   script: number;
   objection: number;
 }
-
 export interface AgentInfo {
   agentId: number;
   organizationId: string; // Changed from 'organization' to 'organizationId' to match schema
@@ -503,7 +502,23 @@ export interface Recruit {
   licensedStates: string;
   notes: string;
 }
+export interface CityNode {
+    city: string;
+    state: string;
+    population: number;
+    zip?: string;
+}
 
+export interface JobFeed {
+    id: string;
+    title: string;
+    description: string;
+    salaryRange?: string;
+    jobType: 'Full-time' | 'Part-time' | 'Contract';
+    targets: CityNode[];
+    xmlUrl?: string;
+    createdAt: string;
+}
 export interface RecruitingResource {
   id: string;
   type: 'video' | 'document' | 'script';

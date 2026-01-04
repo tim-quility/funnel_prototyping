@@ -27,6 +27,7 @@ const MOCK_AGENT: AgentInfo = {
     organizationId: 'master',
     liveTransferOptIn: false,
     a2pOnly: false,
+    recruitingModuleActive:true,
     permissions: {
         text: 1,
         email: 1,

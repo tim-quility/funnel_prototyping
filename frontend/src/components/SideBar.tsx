@@ -23,7 +23,7 @@ const SideBar: React.FC<SideBarProps> = ({ fetchPage}) => {
 
     const leads = [{ "name": "Manage Leads", 'path': 'Add_Leads' }];
     const sync = [{ "name": "Import Leads", 'path': 'Import_Leads' }];
-
+    const recruiting = [{ "name": "Recruiting", "path": "Recruiting" }];
     const dash = [{ "name": "Dashboard", 'path': 'dash' }];
 
 
@@ -39,6 +39,7 @@ const SideBar: React.FC<SideBarProps> = ({ fetchPage}) => {
                         <>
                             <Block title="Import Leads" fetchPage={fetchPage} icon='repeat-q' data={sync} setWhich={setWhich} which={which} expandedMenu={expandedMenu} setExpandedMenu={setExpandedMenu} />
                             {/*<Block title="Warm Market" fetchPage={fetchPage} icon='user-03' data={warmMarket} setWhich={setWhich} which={which} badgeCount={pendingTriageCount} expandedMenu={expandedMenu} setExpandedMenu={setExpandedMenu} />*/}
+                            <Block title="Recruiting" fetchPage={fetchPage} data={recruiting} icon='recruiting' setWhich={setWhich} which={which} expandedMenu={expandedMenu} setExpandedMenu={setExpandedMenu} />
                         </>
                     )}
                     {agent.organizationId !== 'master' && (

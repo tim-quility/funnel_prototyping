@@ -5,6 +5,7 @@ import SideBar from './SideBar';
 import DashboardPage from './dashboard/DashboardPage';
 import { mockWarmMarketContacts } from '../constants';
 import ImportLeadsPage from './import/ImportLeadsPage';
+import RecruitingPage from './recruiting/RecruitingPage';
 
 const PlaceholderPage = ({ title }: { title: string }) => (
     <div className="p-8">
@@ -26,6 +27,8 @@ const MainPage: React.FC = () => {
         return <DashboardPage onViewLead={() => {}} fetchPage={setCurrentPage} />;
       case 'Import_Leads':
         return <ImportLeadsPage />;
+      case 'Recruiting':
+        return <RecruitingPage />;
       default:
         return <PlaceholderPage title={currentPage.replace(/_/g, ' ')} />;
     }
