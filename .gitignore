@@ -57,3 +57,6 @@ temp/
 # PDF / uploads (if generated at runtime)
 uploads/
 generated/
+
+*storybook.log
+storybook-static
