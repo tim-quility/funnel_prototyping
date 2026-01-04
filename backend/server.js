@@ -12,6 +12,7 @@ const bodyParser = require('body-parser');
 // Import routes
 //const authRoutes = require('./routes/auth');
 const importRoutes = require('./routes/import');
+const recruitingRoutes = require('./routes/recruiting');
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 3001;
@@ -53,6 +54,7 @@ app.set('trust proxy', 1);
 // API Routes
 //app.use('/api/auth', authRoutes);
 app.use('/api/import', importRoutes);
+app.use('/api/recruiting', recruitingRoutes);
 
 
 
