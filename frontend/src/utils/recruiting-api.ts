@@ -14,7 +14,8 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
  */
 export async function fetchRecruitingData(): Promise<RecruitingData> {
     await delay(500);
-    return MOCK_RECRUITING_DATA;
+    // Return a shallow copy so React Query detects reference changes after mutations
+    return { ...MOCK_RECRUITING_DATA };
 }
 
 export async function fetchRecruitingBadges(): Promise<RecruitingBadge[]> {
@@ -25,6 +26,11 @@ export async function fetchRecruitingBadges(): Promise<RecruitingBadge[]> {
 export async function savePipelines(pipelines: RecruitingPipeline[], defaultRecruitStageId: string | null): Promise<RecruitingPipeline[]> {
     await delay(600);
     console.log("Mock Save Pipelines:", pipelines, defaultRecruitStageId);
+    
+    // Update in-memory mock data
+    MOCK_RECRUITING_DATA.pipelines = pipelines;
+    MOCK_RECRUITING_DATA.defaultRecruitStageId = defaultRecruitStageId;
+
     return pipelines;
 }
 
@@ -40,90 +46,158 @@ export async function createRecruit(recruit: Omit<Recruit, 'id' | 'applyDate' | 
         licensedStates: '',
         notes: ''
     };
+    
+    // Update in-memory mock data
+    MOCK_RECRUITING_DATA.recruits.push(newRecruit);
+
     return newRecruit;
 }
 
 export async function updateRecruit(recruit: Partial<Recruit> & { id: string }): Promise<Recruit> {
     await delay(300);
-    // Merge mock data with updates
+    
+    // Update in-memory mock data
+    const index = MOCK_RECRUITING_DATA.recruits.findIndex(r => r.id === recruit.id);
+    if (index !== -1) {
+        const updated = { ...MOCK_RECRUITING_DATA.recruits[index], ...recruit };
+        MOCK_RECRUITING_DATA.recruits[index] = updated;
+        return updated;
+    }
+
+    // Fallback merge if not found in mock array (unlikely in this flow)
     const existing = MOCK_RECRUITS.find(r => r.id === recruit.id) || MOCK_RECRUITS[0];
     return { ...existing, ...recruit };
 }
 
 export async function createJobPostTemplate(template: Omit<JobPostTemplate, 'id' | 'lastUpdated'>): Promise<JobPostTemplate> {
     await delay(300);
-    return {
+    const newTemplate = {
         ...template,
         id: `temp-${Date.now()}`,
         lastUpdated: new Date().toISOString()
     };
+    
+    // Update in-memory mock data
+    MOCK_RECRUITING_DATA.jobPostTemplates.push(newTemplate);
+    
+    return newTemplate;
 }
 
 export async function updateJobPostTemplate(template: JobPostTemplate): Promise<JobPostTemplate> {
     await delay(300);
-    return { ...template, lastUpdated: new Date().toISOString() };
+    const updated = { ...template, lastUpdated: new Date().toISOString() };
+    
+    // Update in-memory mock data
+    const index = MOCK_RECRUITING_DATA.jobPostTemplates.findIndex(t => t.id === template.id);
+    if (index !== -1) {
+        MOCK_RECRUITING_DATA.jobPostTemplates[index] = updated;
+    }
+
+    return updated;
 }
 
 export async function deleteJobPostTemplate(id: string): Promise<void> {
     await delay(200);
+    
+    // Update in-memory mock data
+    MOCK_RECRUITING_DATA.jobPostTemplates = MOCK_RECRUITING_DATA.jobPostTemplates.filter(t => t.id !== id);
+    
     console.log(`Deleted template ${id}`);
 }
 
 export async function createRecruitingResource(resource: Omit<RecruitingResource, 'id'>): Promise<RecruitingResource> {
     await delay(300);
-    return {
+    const newResource = {
         ...resource,
         id: `res-${Date.now()}`
     };
+    
+    // Update in-memory mock data
+    MOCK_RECRUITING_DATA.recruitingResources.push(newResource);
+
+    return newResource;
 }
 
 export async function updateRecruitingResource(resource: RecruitingResource): Promise<RecruitingResource> {
     await delay(300);
+    
+    // Update in-memory mock data
+    const index = MOCK_RECRUITING_DATA.recruitingResources.findIndex(r => r.id === resource.id);
+    if (index !== -1) {
+        MOCK_RECRUITING_DATA.recruitingResources[index] = resource;
+    }
+
     return resource;
 }
 
 export async function deleteRecruitingResource(id: string): Promise<void> {
     await delay(200);
+    
+    // Update in-memory mock data
+    MOCK_RECRUITING_DATA.recruitingResources = MOCK_RECRUITING_DATA.recruitingResources.filter(r => r.id !== id);
+
     console.log(`Deleted resource ${id}`);
 }
 
 export async function createResourcePacket(packet: Omit<ResourcePacket, 'id'>): Promise<ResourcePacket> {
     await delay(300);
-    return {
+    const newPacket = {
         ...packet,
         id: `packet-${Date.now()}`
     };
+    
+    // Update in-memory mock data
+    MOCK_RECRUITING_DATA.resourcePackets.push(newPacket);
+
+    return newPacket;
 }
 
 export async function updateResourcePacket(packet: ResourcePacket): Promise<ResourcePacket> {
     await delay(300);
+    
+    // Update in-memory mock data
+    const index = MOCK_RECRUITING_DATA.resourcePackets.findIndex(p => p.id === packet.id);
+    if (index !== -1) {
+        MOCK_RECRUITING_DATA.resourcePackets[index] = packet;
+    }
+
     return packet;
 }
 
 export async function deleteResourcePacket(id: string): Promise<void> {
     await delay(200);
+    
+    // Update in-memory mock data
+    MOCK_RECRUITING_DATA.resourcePackets = MOCK_RECRUITING_DATA.resourcePackets.filter(p => p.id !== id);
+
     console.log(`Deleted packet ${id}`);
 }
 
 // --- Job Feeds ---
 
+// Helper mutable store for feeds since they aren't in MOCK_RECRUITING_DATA
+let MOCK_FEEDS_STORE = [...MOCK_FEEDS];
+
 export async function fetchJobFeeds(): Promise<JobFeed[]> {
     await delay(400);
-    return MOCK_FEEDS;
+    return MOCK_FEEDS_STORE; 
 }
 
 export async function createJobFeed(feedData: Omit<JobFeed, 'id' | 'createdAt' | 'xmlUrl'>): Promise<JobFeed> {
     await delay(500);
-    return {
+    const newFeed = {
         ...feedData,
         id: `feed-${Date.now()}`,
         createdAt: new Date().toISOString(),
         xmlUrl: `https://api.mock.com/feeds/feed-${Date.now()}.xml`
     };
+    MOCK_FEEDS_STORE.push(newFeed);
+    return newFeed;
 }
 
 export async function deleteJobFeed(id: string): Promise<void> {
     await delay(200);
+    MOCK_FEEDS_STORE = MOCK_FEEDS_STORE.filter(f => f.id !== id);
     console.log(`Deleted feed ${id}`);
 }
 
@@ -142,6 +216,7 @@ export async function getTopCitiesByState(state: string, limit: number): Promise
     await delay(200);
     return MOCK_CITIES.filter(c => c.state === state).slice(0, limit);
 }
+
 /*
 Real requests
 

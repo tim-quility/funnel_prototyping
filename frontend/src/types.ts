@@ -1,3 +1,4 @@
+
 import { StringList } from "@google/genai";
 
 export type ChallengeMetric = 'dials' | 'contacts' | 'appointments' | 'apv';
@@ -22,11 +23,13 @@ export interface TeamChallenge {
     winnerTeamId?: string | null;
     description?: string; // New: Optional description
 }
+
 export interface SavedFilter {
   id: string;
   name: string;
   filters: FilterState;
 }
+
 export type TournamentType = 'single-elimination' | 'round-robin';
 
 export interface TournamentParticipant {
@@ -62,6 +65,7 @@ export interface App {
   icon: string;
   page: string;
 }
+
 export interface Lead {
   id:string;
   lead_id: string;
@@ -80,7 +84,7 @@ export interface Lead {
   borrower_work?:String;
   last_contacted: string | null;
   date_assigned: string;
-  tags: string[];
+  tags: Tag[]; // Changed from string[] to Tag[]
   state: string;
   amount_contacted: number;
   lead_type: string;
@@ -116,6 +120,7 @@ export interface AgentPermissions {
   script: number;
   objection: number;
 }
+
 export interface AgentInfo {
   agentId: number;
   organizationId: string; // Changed from 'organization' to 'organizationId' to match schema
@@ -153,7 +158,6 @@ export interface GoalSetting {
 export interface MemberGoal extends GoalSetting {
     target: number;
 }
-
 
 export interface TeamMember {
   id: number;
@@ -199,6 +203,7 @@ export interface AgentActivity {
   unreadMessages: { unreadLeadFirst: string; unreadLeadLast: string; unreadMessageTime: number; unreadMessage: string; statusChangeLead: number }[];
   leadsPurchased: { purchaseDate: string; count: number }[];
 }
+
 export interface ActivityFeedItem {
   id: string;
   type: 'DIAL' | 'STATUS_CHANGE' | 'LEAD_PURCHASE' | 'APPOINTMENT' | 'VOICEMAIL' | 'NOTE';
@@ -585,398 +590,6 @@ export interface RecruitingBadge {
   viewed: boolean;
 }
 
-// Conversation Types
-export interface Message {
-    id: string;
-    text: string;
-    sender: 'agent' | 'contact';
-    timestamp: string; // ISO string
-    imageUrl?: string;
-}
-
-export interface ScheduledMessage {
-    id: string;
-    conversationId: string;
-    text: string;
-    imageUrl?: string;
-    scheduledAt: string; // ISO string
-}
-
-export interface Conversation {
-    id: string;
-    type: 'Sales' | 'Recruiting';
-    contactId: number | string;
-    contactName: string;
-    contactAvatarUrl: string;
-    lastMessage: string;
-    timestamp: string; // ISO string
-    unreadCount: number;
-    messages: Message[];
-    scheduledMessage?: ScheduledMessage;
-    // Contextual info
-    contactStatus?: string; // For Sales leads
-    contactStage?: string; // For Recruits
-    correspondentNumber?: string;
-}
-
-
-// Warm Market Types
-export interface WarmMarketContact {
-  id: number;
-  fullName: string;
-  phone: string;
-  email?: string;
-  company?: string;
-  location?: string; // e.g., "City, ST"
-  importDate: string; // ISO string
-  suggestion?: 'Recruiter' | 'Friend' | 'Insurance Sales';
-  status: 'pending' | 'categorized' | 'ignored' | 'committed' | 'converted'; // Added 'converted' status
-  category?: 'recruiting' | 'insurance' | 'advanced_market';
-}
-
-// Agent-to-Agent Chat Types
-export interface AgentMessage {
-    id: string;
-    senderId: number;
-    text: string;
-    timestamp: string; // ISO string
-}
-
-export interface AgentConversation {
-    id: string; // Typically a composite of two agent IDs
-    participantIds: number[];
-    messages: AgentMessage[];
-}
-
-// Voicemail Type
-export interface Voicemail {
-  id: string; // Unique ID for the voicemail
-  lead_id: string | null; // Associated lead ID, or 'none' if not linked (changed from 'none' string to null for type consistency)
-  name?: string; // Caller's name (if known, e.g., borrower_first + borrower_last)
-  number: string; // Caller's phone number
-  duration: number; // Duration in seconds
-  timestamp: number; // Unix timestamp
-  url: string; // URL to the audio file
-  message_heard: 'yes' | 'no'; // Status of the voicemail
-  borrower_first?: string; // First name of the associated lead
-  borrower_last?: string; // Last name of the associated lead
-  message_from: string; // Caller's raw phone number
-  formatted_timestamp: number; // Timestamp as a number, for easier sorting and formatting
-}
-export interface ProvisionedNumber {
-  sid: string;
-  phoneNumber: string;
-  friendlyName: string;
-  provisionedAt: string; // ISO string
-}
-
-export interface AvailableNumber {
-    phoneNumber: string;
-    friendlyName: string; // Formatted number
-    locality: string; // e.g. "City, State"
-}
-
-export interface A2PCustomerProfile {
-    sid: string;
-    status: 'draft' | 'pending-review' | 'in-review' | 'approved' | 'failed';
-    friendlyName: string;
-    type: 'sole_proprietor' | 'standard';
-    // FIX: Add optional id property to match backend data shape
-    id?: string;
-}
-
-export interface A2PBrand {
-    sid: string;
-    customerProfileSid: string;
-    status: 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'FAILED';
-    brandType: 'SOLE_PROPRIETOR' | 'STANDARD';
-    // FIX: Add optional id property to match backend data shape
-    id?: string;
-}
-
-export interface A2PCampaign {
-    sid: string;
-    brandSid: string;
-    messagingServiceSid: string;
-    status: 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'FAILED';
-    useCase: string;
-    // FIX: Add optional properties to match backend data shape and fix component errors
-    id?: string;
-    brandType?: 'SOLE_PROPRIETOR' | 'STANDARD';
-    numbers?: { sid: string; phoneNumber: string }[];
-}
-
-export interface TrustHubStatus {
-    profiles: A2PCustomerProfile[];
-    brands: A2PBrand[];
-    campaigns: A2PCampaign[];
-}
-
-export interface A2PRegistration {
-    id: string;
-    agent_id: number;
-    profile_sid: string;
-    payment_confirmed: boolean;
-    tos_agreed: boolean;
-    created_at: string;
-}
-// Dashboard Filter Types
-export interface FilterOptions {
-    statuses: { id: number; name: string }[];
-    tags: { id: string; name: string }[];
-    leadTypes: { id: string; name: string }[];
-    leadLevels: { id: string; name: string }[];
-    states: { id: string; name: string }[];
-}
-
-export interface FilterValue<T> {
-    include: T[];
-    exclude: T[];
-}
-
-export interface FilterState {
-    searchTerm: string;
-    statuses: FilterValue<number>;
-    tags: FilterValue<string>;
-    dateAssigned: { start: string | null; end: string | null };
-    dateAssignedDaysAgo: { min: number | null; max: number | null };
-    lastContactedDaysAgo: { min: number | null; max: number | null };
-    // New fields based on user's example
-    lastContacted: { start: string | null; end: string | null };
-    amountContacted: { min: number | null; max: number | null };
-    leadTypes: FilterValue<string>;
-    leadLevels: FilterValue<string>;
-    states: FilterValue<string>;
-}
-
-
-// Pagination Types
-export interface PaginationMeta {
-  total: number;
-  perPage: number;
-  currentPage: number;
-  lastPage: number;
-  from: number;
-  to: number;
-}
-
-// New: Paginated Recordings Response
-export interface PaginatedRecordingsResponse {
-    recordings: AgentCallRecording[];
-    meta: PaginationMeta;
-}
-
-export type SmartListRuleAttribute = 'NEVER_CONTACTED' | 'LAST_CONTACTED_DAYS' | 'CONTACT_ATTEMPTS' | 'LEAD_LEVEL' | 'STATUS' | 'LEAD_AGE';
-
-export interface SmartListRule {
-    id: SmartListRuleAttribute;
-    label: string;
-    description: string;
-    enabled: boolean;
-    config: {
-        operator?: 'gt' | 'lt' | 'eq'; // For >, <, =
-        value?: number; // For single number values (days, attempts, age)
-        values?: (string | number)[]; // For multi-select values (statuses, lead levels)
-    };
-}
-export interface VoiceRecording {
-    id: string;
-    name: string;
-    file_url: string;
-    duration: number; // in seconds
-    type: 'voicemail_box' | 'voicemail_drop';
-    is_default?: boolean; // Only applicable for 'voicemail_box' type
-    created_at: string; // ISO string
-}
-
-// New: Call Recording Settings (for /settings/call-recording)
-export interface CallRecordingSettings {
-  agent_id: number; // Agent this setting belongs to
-  recording_consent: 0 | 1; // 0 = no consent, 1 = consented
-  record_side: 0 | 1; // 0 = agent side, 1 = two side
-  record_calls: 0 | 1; // 0 = select calls, 1 = all calls
-}
-
-export type CallRecordingType = 'outgoing' | 'incoming'; // New: Type of call
-export type CallRecordingSide = 'agent' | 'two-sided'; // New: Which side(s) were recorded
-export type CallRecordingFilterTime = 'today' | '7_days' | '30_days' | 'all_time'; // For filtering recorded calls
-
-export interface ShareMetadata {
-  method: 'email' | 'link';
-  recipient?: string; // Email address or a generic identifier
-  shared_at: string; // ISO string
-}
-
-// New: Agent Call Recording (for recorded calls list)
-export interface AgentCallRecording {
-  id: string;
-  lead_id: string | null; // Associated lead, if any
-  leadName?: string; // Derived from lead_id
-  caller_number: string; // The raw number of the other party
-  call_type: CallRecordingType;
-  recording_url: string;
-  duration: number; // In seconds
-  call_date: string; // ISO string
-  is_saved: boolean; // If true, prevent auto-deletion
-  shared_with?: ShareMetadata[]; // History of sharing
-}
-
-
-// New: Stripe-related Types
-export type StripeSubscriptionStatus = 'active' | 'past_due' | 'unpaid' | 'canceled' | 'ended' | 'trialing' | 'paused';
-export type StripeBillingInterval = 'day' | 'week' | 'month' | 'year';
-
-export interface StripePlan {
-    id: string; // Stripe Price ID
-    name: string; // Product name for the plan
-    amount: number; // Amount in cents
-    currency: string;
-    interval: StripeBillingInterval;
-    interval_count: number;
-    description?: string;
-}
-
-export interface StripeSubscription {
-    id: string; // Stripe Subscription ID
-    customer_id: string; // Stripe Customer ID
-    description: string; // Description from the associated product
-    status: StripeSubscriptionStatus;
-    quantity: number;
-    start_date: string; // ISO string
-    current_period_end: string; // ISO string, when the current billing period ends
-    cancel_at_period_end: boolean; // Indicates if cancellation is pending
-    cancel_at: string | null; // ISO string, when it will be cancelled
-    paused_at?: string | null; // New: ISO string, when the subscription was paused
-    plan: StripePlan;
-    balance_due?: number; // New: Current balance due in cents
-}
-
-// New: Usage Record Type
-export interface UsageRecord {
-    id: string;
-    billingPeriodStart: string; // ISO string
-    billingPeriodEnd: string; // ISO string
-    textMessagesSent: number;
-    callsMade: number;
-    leadsPurchased: number;
-    // Add other usage metrics as needed
-}
-
-// New: Lead Notes & Files
-export interface LeadNote {
-    id: string;
-    lead_id: string;
-    content: string;
-    created_at: string; // ISO string
-    agent_name: string; // Name of the agent who created the note
-}
-
-export interface LeadFile {
-    id: string;
-    lead_id: string;
-    file_name: string;
-    file_url: string;
-    file_type: string; // e.g., 'application/pdf', 'image/jpeg'
-    uploaded_at: string; // ISO string
-    agent_name: string;
-}
-
-// New: Lead Card Layouts
-export type LeadLayoutBlockType = 'lead_details' | 'tags' | 'activity_log' | 'notes_overview' | 'files_overview';
-
-export interface LeadLayoutBlock {
-    id: LeadLayoutBlockType;
-    label: string;
-    icon: string;
-}
-
-export type LeadLayoutType = {
-    [leadType: string]: LeadLayoutBlockType[]; // key is lead_type (e.g., "Final Expense"), value is an array of block IDs
-    default: LeadLayoutBlockType[]; // A fallback default layout
-};
-
-// New: Quote & Qualifier data for Lead Card
-export interface Quote {
-    id: string;
-    company: string;
-    coverage: string; // e.g., "$100,000"
-    monthly_premium: string; // e.g., "$55.75"
-    notes: string;
-}
-
-export interface LeadQualifierData {
-    smoker: 'yes' | 'no';
-    annualIncome: number;
-    healthConditions: string;
-    desiredCoverage: number;
-    age?: number;
-}
-
-// New: Types for Lead Detail Fields (for customization)
-export type LeadFieldType = 'text' | 'number' | 'date' | 'phone' | 'email' | 'select' | 'boolean';
-
-export interface LeadFieldOption {
-    value: string | number;
-    label: string;
-}
-
-export interface LeadFieldConfig {
-    id: keyof Lead; // Corresponds to a property in the Lead interface
-    label: string;
-    icon?: string; // Optional icon for display
-    type: LeadFieldType;
-    group: 'Primary Contact' | 'Co-Borrower' | 'Address' | 'Lead Info' | 'Financial';
-    options?: LeadFieldOption[]; // For 'select' type fields
-    editable: boolean; // Whether the field can be edited inline
-    required?: boolean; // Whether the field is required
-}
-
-export type LeadFieldLayout = {
-    [leadType: string]: (keyof Lead)[]; // Ordered list of field IDs to display
-    default: (keyof Lead)[]; // Default layout for fields
-};
-export interface CreateTeamPayload {
-    name: string;
-    goalsEnabled: boolean;
-    goalSettings: GoalSetting[];
-}
-
-export interface UpdateTeamPayload {
-    teamId: string;
-    teamData: {
-        name: string;
-        goalsEnabled: boolean;
-        goalSettings: GoalSetting[];
-    };
-}
-
-export interface RespondToInvitePayload {
-    inviteId: string;
-    answer: 'accept' | 'decline';
-    goals?: MemberGoal[];
-}
-
-export interface InviteMembersPayload {
-    teamId: string;
-    emails: string[];
-}
-
-export interface RemoveMemberPayload {
-    teamId: string;
-    memberId: number;
-}
-export interface TeamVisibility {
-    teamId: string;
-    memberId: number;
-    statsVisible: boolean;
-}
-export interface TeamMemberUpdatePayload {
-    teamId: string;
-    memberId: number;
-    updates: {
-        statsVisible: boolean;
-    };
-}
 export interface RecruitingData {
     recruits: Recruit[];
     pipelines: RecruitingPipeline[];
@@ -984,6 +597,11 @@ export interface RecruitingData {
     resourcePackets: ResourcePacket[];
     jobPostTemplates: JobPostTemplate[];
     defaultRecruitStageId: string | null; // New: ID of the globally default stage
+    stats?: { // Added stats property
+        totalCandidates: number;
+        activePipelines: number;
+        conversionRate: number;
+    };
 }
 
 // New: Payloads for Scheduled Calls API
@@ -1171,7 +789,7 @@ export interface LeadStatus {
   application: boolean;
 }
 
-//export type SmartListRuleAttribute = 'NEVER_CONTACTED' | 'LAST_CONTACTED_DAYS' | 'CONTACT_ATTEMPTS' | 'LEAD_LEVEL' | 'STATUS' | 'LEAD_AGE';
+export type SmartListRuleAttribute = 'NEVER_CONTACTED' | 'LAST_CONTACTED_DAYS' | 'CONTACT_ATTEMPTS' | 'LEAD_LEVEL' | 'STATUS' | 'LEAD_AGE';
 
 export interface SmartListRule {
     id: SmartListRuleAttribute;
@@ -1183,4 +801,254 @@ export interface SmartListRule {
         value?: number; // For single number values (days, attempts, age)
         values?: (string | number)[]; // For multi-select values (statuses, lead levels)
     };
+}
+
+// Missing Filter types
+export interface FilterValue<T> {
+    include: T[];
+    exclude: T[];
+}
+
+export interface RangeFilterValue {
+    min: number | null;
+    max: number | null;
+}
+
+export interface DateRangeFilterValue {
+    start: string | null; // ISO Date string or null
+    end: string | null;
+}
+
+export interface FilterState {
+    searchTerm: string;
+    statuses: FilterValue<number>;
+    tags: FilterValue<string>;
+    dateAssigned: DateRangeFilterValue;
+    dateAssignedDaysAgo: RangeFilterValue;
+    lastContacted: DateRangeFilterValue;
+    lastContactedDaysAgo: RangeFilterValue;
+    amountContacted: RangeFilterValue;
+    leadTypes: FilterValue<string>;
+    leadLevels: FilterValue<string>;
+    states: FilterValue<string>;
+}
+
+export interface FilterOptions {
+    statuses: { id: number; name: string }[];
+    tags: { id: string; name: string }[];
+    leadTypes: { id: string; name: string }[];
+    leadLevels: { id: string; name: string }[];
+    states: { id: string; name: string }[];
+}
+
+export interface PaginationMeta {
+    total: number;
+    perPage: number;
+    currentPage: number;
+    lastPage: number;
+    from: number;
+    to: number;
+}
+
+export interface LeadNote {
+    id: string;
+    lead_id: string;
+    content: string;
+    created_at: string;
+    agent_name: string;
+}
+
+export interface LeadFile {
+    id: string;
+    lead_id: string;
+    file_name: string;
+    file_url: string;
+    file_type: string;
+    uploaded_at: string;
+    agent_name: string;
+}
+
+export interface LeadQualifierData {
+    smoker: 'yes' | 'no';
+    annualIncome: number;
+    healthConditions: string;
+    desiredCoverage: number;
+    age?: number;
+}
+
+export interface Quote {
+    id: string;
+    company: string;
+    coverage: string;
+    monthly_premium: string;
+    notes: string;
+}
+
+export interface ProvisionedNumber {
+    sid: string;
+    phoneNumber: string;
+    friendlyName: string;
+    capabilities: any;
+}
+
+export interface CallRecordingSettings {
+    agent_id: number;
+    recording_consent: number;
+    record_side: number;
+    record_calls: number;
+}
+
+export interface AgentCallRecording {
+    id: string;
+    lead_id: string;
+    leadName: string;
+    caller_number: string;
+    call_type: 'incoming' | 'outgoing';
+    recording_url: string;
+    duration: number;
+    call_date: string;
+    is_saved: boolean;
+    shared_with: { method: string; recipient: string; shared_at: string }[];
+}
+
+export type LeadFieldType = 'text' | 'number' | 'date' | 'email' | 'phone' | 'select' | 'boolean';
+
+export interface LeadFieldOption {
+    value: string | number;
+    label: string;
+}
+
+export interface LeadFieldConfig {
+    id: keyof Lead;
+    label: string;
+    type: LeadFieldType;
+    group: string;
+    editable: boolean;
+    required?: boolean;
+    options?: LeadFieldOption[];
+}
+
+export type LeadLayoutBlockType = 'lead_details' | 'tags' | 'activity_log' | 'notes_overview' | 'files_overview';
+
+export interface LeadLayoutType {
+    default: LeadLayoutBlockType[];
+    [key: string]: LeadLayoutBlockType[];
+}
+
+export interface LeadFieldLayout {
+    default: (keyof Lead)[];
+    [key: string]: (keyof Lead)[];
+}
+
+export interface UsageRecord {
+    id: string;
+    billingPeriodStart: string;
+    billingPeriodEnd: string;
+    textMessagesSent: number;
+    callsMade: number;
+    leadsPurchased: number;
+}
+
+export interface StripeSubscription {
+    id: string;
+    customer_id: string;
+    description: string;
+    status: string;
+    quantity: number;
+    start_date: string;
+    current_period_end: string;
+    cancel_at_period_end: boolean;
+    cancel_at: string | null;
+    paused_at?: string;
+    plan: {
+        id: string;
+        name: string;
+        amount: number;
+        currency: string;
+        interval: string;
+        interval_count: number;
+        description?: string;
+    };
+    balance_due: number;
+}
+
+export interface Conversation {
+    id: string;
+    type: 'Sales' | 'Recruiting';
+    contactId: string;
+    contactName: string;
+    contactAvatarUrl?: string;
+    lastMessage: string;
+    timestamp: string;
+    unreadCount: number;
+    contactStatus?: string;
+    contactStage?: string;
+    messages: Message[];
+    correspondentNumber?: string;
+    agentNumber?: string;
+    localNumber?: string;
+    scheduledMessage?: {
+        id: string;
+        text: string;
+        scheduledAt: string;
+        imageUrl?: string;
+    }
+}
+
+export interface Message {
+    id: string;
+    text: string;
+    sender: 'agent' | 'contact';
+    timestamp: string;
+    imageUrl?: string;
+    status?: 'sent' | 'delivered' | 'read' | 'failed';
+}
+
+export interface WarmMarketContact {
+    id: number;
+    fullName: string;
+    phone: string;
+    email?: string;
+    company: string;
+    location: string;
+    importDate: string;
+    suggestion?: string;
+    status: 'pending' | 'categorized' | 'ignored';
+    category?: string;
+}
+
+export interface AgentConversation {
+    id: string;
+    participantIds: number[];
+    messages: {
+        id: string;
+        senderId: number;
+        text: string;
+        timestamp: string;
+    }[];
+}
+
+export interface Voicemail {
+    id: string;
+    lead_id: string | null;
+    name: string;
+    number: string;
+    duration: number;
+    timestamp: number;
+    url: string;
+    message_heard: 'yes' | 'no';
+    borrower_first?: string;
+    borrower_last?: string;
+    message_from: string;
+    formatted_timestamp: number;
+}
+
+export interface VoiceRecording {
+    id: string;
+    name: string;
+    file_url: string;
+    duration: number;
+    type: 'voicemail_box' | 'voicemail_drop';
+    is_default?: boolean;
+    created_at: string;
 }
