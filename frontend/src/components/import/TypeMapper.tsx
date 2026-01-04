@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import Button from '../q_design/Button';
 import Icon from '../common/Icon';
-import PrimaryButton from '../common/PrimaryButton';
-import OutlineButton from '../common/OutlineButton';
 import { useQuery } from '@tanstack/react-query';
 import { fetchFilterOptions } from '../../utils/filter-api';
 import type { FilterOptions } from '../../types';
@@ -122,12 +121,17 @@ const TypeMapper: React.FC<TypeMapperProps> = ({ uniqueCsvValues, onComplete, on
             </div>
 
             <div className="mt-8 flex justify-between items-center">
-                <OutlineButton onClick={onBack} label="Back" />
-                <PrimaryButton 
+                <Button hierarchy="secondary" onClick={onBack}>
+                    Back
+                </Button>
+                <Button
+                    hierarchy="primary"
                     onClick={handleNext} 
-                    label="Next: Status Mapping" 
-                    rightContent={<Icon name="q-chevron-right" size={18} />}
-                />
+                    icon={<Icon name="q-chevron-right" size={18} />}
+                    iconPosition="right"
+                >
+                    Next: Status Mapping
+                </Button>
             </div>
         </div>
     );

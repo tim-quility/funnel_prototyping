@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
+import Button from '../q_design/Button';
 import Icon from '../common/Icon';
-import PrimaryButton from '../common/PrimaryButton';
-import OutlineButton from '../common/OutlineButton';
 import { useQuery } from '@tanstack/react-query';
 import { fetchStatuses } from '../../utils/status-api';
 import type { LeadStatus } from '../../types';
@@ -103,12 +102,17 @@ const StatusMapper: React.FC<StatusMapperProps> = ({ uniqueCsvValues, onComplete
             </div>
 
             <div className="mt-8 flex justify-between items-center">
-                <OutlineButton onClick={onBack} label="Back" />
-                <PrimaryButton 
+                <Button hierarchy="secondary" onClick={onBack}>
+                    Back
+                </Button>
+                <Button
+                    hierarchy="primary"
                     onClick={handleNext} 
-                    label="Next: Preview Data" 
-                    rightContent={<Icon name="q-chevron-right" size={18} />}
-                />
+                    icon={<Icon name="q-chevron-right" size={18} />}
+                    iconPosition="right"
+                >
+                    Next: Preview Data
+                </Button>
             </div>
         </div>
     );

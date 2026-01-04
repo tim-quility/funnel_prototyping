@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import Button from '../q_design/Button';
 import Icon from '../common/Icon';
 
 // Basic CSV parser
@@ -99,9 +100,11 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded }) => {
             <Icon name="upload-cloud" size={48} className="mx-auto text-quility-dark-grey" />
             <p className="mt-4 font-semibold text-quility-dark-text">Drag and drop your file here</p>
             <p className="mt-1 text-xs text-quility-dark-grey">or</p>
-            <label htmlFor="file-upload" className="mt-2 inline-block px-4 py-2 text-sm font-bold bg-quility-button text-quility-light-text rounded-md hover:bg-quility-button-hover cursor-pointer">
-                Browse Files
-            </label>
+            <div className="mt-2">
+                <Button hierarchy="primary" onClick={() => document.getElementById('file-upload')?.click()}>
+                    Browse Files
+                </Button>
+            </div>
             <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept=".csv" />
         </div>
          {error && <p className="mt-4 text-sm text-red-500">{error}</p>}

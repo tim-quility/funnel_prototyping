@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Button from '../q_design/Button';
 import Icon from '../common/Icon';
 import { LEAD_FIELDS_FOR_MAPPING, REQUIRED_IMPORT_FIELDS } from '../../constants';
 import type { Mapping, MappingProfile } from '../../types';
@@ -163,13 +164,13 @@ const FieldMapper: React.FC<FieldMapperProps> = ({ csvHeaders, onMappingComplete
                             placeholder="Profile Name"
                             className="h-10 px-3 text-base border rounded-md bg-white border-quility-border text-quility-dark-grey"
                         />
-                        <button onClick={handleSaveProfile} className="h-10 px-4 font-bold bg-quility-button text-white rounded-md">Save</button>
-                        <button onClick={() => setIsSavingProfile(false)} className="h-10 px-4 font-semibold text-quility-dark-grey rounded-md">Cancel</button>
+                        <Button hierarchy="primary" onClick={handleSaveProfile} style={{ height: '40px' }}>Save</Button>
+                        <Button hierarchy="tertiary" onClick={() => setIsSavingProfile(false)} style={{ height: '40px' }}>Cancel</Button>
                     </div>
                 ) : (
-                    <button onClick={() => setIsSavingProfile(true)} className="px-4 py-2 text-sm font-bold bg-white border-2 border-quility-border text-quility-dark-text rounded-md hover:bg-quility-hover-grey flex items-center gap-2">
-                        <Icon name="plus-circle" size={16} /> Save Current Mapping
-                    </button>
+                    <Button hierarchy="secondary" onClick={() => setIsSavingProfile(true)} icon={<Icon name="plus-circle" size={16} />}>
+                        Save Current Mapping
+                    </Button>
                 )}
                 </div>
             </div>
@@ -219,15 +220,17 @@ const FieldMapper: React.FC<FieldMapperProps> = ({ csvHeaders, onMappingComplete
             </div>
 
              <div className="mt-8 flex justify-between items-center">
-                <button onClick={onCancel} className="px-6 py-2 text-base font-bold bg-transparent border-2 border-quility-border text-quility-dark-text rounded-md hover:bg-quility-hover-grey">
+                <Button hierarchy="secondary" onClick={onCancel}>
                     Back
-                </button>
-                <button 
+                </Button>
+                <Button
+                    hierarchy="primary"
                     onClick={handleNext}
-                    className="px-6 py-2 text-base font-bold rounded-md bg-quility-button text-quility-light-text hover:bg-quility-button-hover flex items-center gap-2"
+                    icon={<Icon name="q-chevron-right" size={18} />}
+                    iconPosition="right"
                 >
-                    Next: Preview Data <Icon name="q-chevron-right" size={18} />
-                </button>
+                    Next: Preview Data
+                </Button>
             </div>
         </div>
     );
