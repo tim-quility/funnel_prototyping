@@ -1,7 +1,7 @@
 
 import React from 'react';
+import Button from '../q_design/Button';
 import Icon from '../common/Icon';
-import PrimaryButton from '../common/PrimaryButton'; // Reusing existing button
 
 interface ImportSummaryProps {
   summary: {
@@ -74,21 +74,24 @@ const ImportSummary: React.FC<ImportSummaryProps> = ({ summary, failedRows, onSt
                     <p className="text-sm text-red-700 mb-3">
                         {summary.failed} rows were skipped due to missing required fields.
                     </p>
-                    <button 
+                    <Button
+                        hierarchy="tertiary"
                         onClick={handleDownloadFailed}
-                        className="text-sm font-bold text-red-700 hover:text-red-900 underline flex items-center justify-center gap-2 mx-auto"
+                        style={{ color: '#b91c1c' }} // red-700
+                        icon={<Icon name="file-down-q" size={16} />}
                     >
-                        <Icon name="file-down-q" size={16} />
                         Download Failed Rows CSV
-                    </button>
+                    </Button>
                 </div>
             )}
 
-            <PrimaryButton
+            <Button
+                hierarchy="primary"
                 onClick={onStartOver}
-                label="Import Another File"
-                className="w-full"
-            />
+                style={{ width: '100%' }}
+            >
+                Import Another File
+            </Button>
         </div>
     </div>
   );

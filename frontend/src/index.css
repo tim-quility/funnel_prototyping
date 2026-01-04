@@ -40,4 +40,24 @@
     --color-quility-light-green: #81c784;
     --color-background: #f3f4f6;
     --color-secondary: #607d8b;
+
+    /* Mappings for q_design Button component */
+    --color-primary-default: var(--color-quility-button);
+    --color-primary-hover: var(--color-quility-button-hover);
+    --color-primary-active: var(--color-quility-dark-hover);
+
+    --color-secondary-hover: var(--color-quility-light-hover);
+    --color-secondary-active: var(--color-quility-hover-grey);
+
+    --color-destructive-default: var(--color-quility-destructive);
+    --color-destructive-hover: var(--color-quility-destructive-hover);
+    --color-destructive-active: #8a1515;
+
+    --color-destructive-subtle-hover: #fee2e2;
+    --color-destructive-subtle-active: #fecaca;
+
+    --color-neutral-subtle-hover: var(--color-quility-hover-grey);
+    --color-neutral-subtle-active: #e0e0e0;
+
+    --color-disabled-background: #e0e0e0;
 }
