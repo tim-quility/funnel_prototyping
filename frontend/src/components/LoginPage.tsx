@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import FunnelLogo from './icons/FunnelLogo';
 import { useAuth } from '../context/AuthContext';
+import Button from './q_design/Button';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -72,13 +73,15 @@ const LoginPage: React.FC = () => {
           </div>
 
           <div className="mt-8">
-            <button
-              type="submit"
-              className="w-full sm:w-52 h-11 text-lg bg-quility-button text-quility-light-text font-bold rounded-md hover:bg-quility-button-hover transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-quility"
-              onClick={handleLogin}
+              <Button
+                type="submit"
+                //className="w-full sm:w-52 h-11 text-lg bg-quility-button text-quility-light-text font-bold rounded-md hover:bg-quility-button-hover transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-quility"
+                onClick={handleLogin}
+                hierarchy='primary'
             >
-              Login
-            </button>
+
+              Sign In
+         </Button>
           </div>
         </div>
       </div>
