@@ -1,0 +1,211 @@
+# EPIC: Bulk CSV Lead Import
+
+## Description
+As a Funnel user (Agent), I want to import leads in bulk (up to 20,000 rows) from CSV files with intelligent field mapping, strict data validation, and non-destructive deduplication, so that I can efficiently populate my CRM without creating duplicates or bad data.
+
+---
+
+## STORY-1: [BE] Database Schema for Mapping Profiles
+
+**Description:**
+Create the database table required to store user-defined column mapping profiles. This allows users to save their "CSV Header -> DB Field" configurations and reuse them later.
+
+**File Paths:**
+- `backend/sql/create_import_mapping_profiles.sql` (New)
+
+**Requirements:**
+1. Create table `import_mapping_profiles`.
+2. Fields:
+   - `id`: Primary Key (Auto Increment).
+   - `agent_id`: Foreign Key to `agents` table.
+   - `profile_name`: String (e.g., "Facebook Leads").
+   - `mapping_json`: JSON column to store the key-value map `{ "csv_header": "db_field" }`.
+   - Timestamps: `created_at`, `updated_at`.
+
+**Acceptance Criteria:**
+- Table exists in the database.
+- `agent_id` is indexed for fast lookup.
+
+---
+
+## STORY-2: [BE] API - Manage Mapping Profiles
+
+**Description:**
+Implement REST API endpoints to Create, Read, and Delete mapping profiles for the logged-in agent.
+
+**File Paths:**
+- `backend/routes/import.js` (Update)
+- `backend/controllers/importController.js` (Update)
+
+**Tasks:**
+1. **GET /api/import/profiles:**
+   - Fetch all profiles where `agent_id` matches the user.
+   - Return `[{ id, profile_name, mapping_json }]`.
+2. **POST /api/import/profiles:**
+   - Validate body: `{ profile_name, mapping_json }`.
+   - Insert into `import_mapping_profiles`.
+3. **DELETE /api/import/profiles/:id:**
+   - Delete profile if it belongs to the agent.
+
+---
+
+## STORY-3: [FE] UI - Saved Mapping Profiles
+
+**Description:**
+Update the "Field Mapping" step in the UI to allow users to save their current mapping or load a previously saved one.
+
+**File Paths:**
+- `frontend/src/components/import/FieldMapper.tsx` (Update)
+- `frontend/src/components/import/ImportLeadsPage.tsx` (Update)
+
+**Requirements:**
+1. **Load Profile:** Add a dropdown "Load Saved Profile" at the top of the mapper.
+   - On selection, populate the dropdowns for each CSV column automatically.
+2. **Save Profile:** Add a "Save Mapping as Profile" button.
+   - Open a modal/prompt for "Profile Name".
+   - Call `POST /api/import/profiles`.
+3. **Persist:** Ensure loaded profiles update the parent state correctly.
+
+---
+
+## STORY-4: [FE] File Upload & Client-Side Chunking
+
+**Description:**
+Enhance the file upload component to parse large CSVs (20k rows) and prepare them for chunked upload to prevent timeouts.
+
+**File Paths:**
+- `frontend/src/components/import/FileUpload.tsx` (Update)
+- `frontend/src/components/import/ImportLeadsPage.tsx` (Update)
+
+**Tasks:**
+1. **Parsing:** Use `PapaParse` (or similar) with:
+   - `skipEmptyLines: true`
+   - `header: true`
+   - Handle edge cases (quoted fields with commas).
+2. **Validation:** Check file size (soft limit ~10MB) and type (`.csv`).
+3. **Chunking Logic:**
+   - Instead of sending one massive payload, split the `results.data` array into chunks of 500-1000 rows.
+   - Store these chunks in the component state (or a context) to be sent sequentially during the "Import" phase.
+
+---
+
+## STORY-5: [BE] Service - Lead Validation & Normalization
+
+**Description:**
+Implement a dedicated service to sanitize and validate incoming lead data *before* it touches the database. This ensures data integrity.
+
+**File Paths:**
+- `backend/services/ValidationService.js` (New)
+- `backend/controllers/importController.js` (Usage)
+
+**Logic / Pseudocode:**
+```javascript
+function validateAndNormalize(lead) {
+  // 1. Phone Normalization (Strict 10 digit)
+  let phone = lead.phone || lead.borrower_cell;
+  phone = phone.replace(/\D/g, ''); // Strip non-numeric
+  if (phone.length !== 10) {
+     // Mark as invalid OR leave null based on business rule.
+     // BRD implies strict validation, so maybe reject or flag.
+  }
+
+  // 2. Date Formatting (ISO 8601)
+  // Convert "01/15/1980" -> "1980-01-15"
+
+  // 3. State Validation
+  // Check against list of 2-letter US codes (AL, AK, ...).
+  // If input is "California", map to "CA".
+
+  // 4. Tobacco Boolean
+  // "Yes", "Y", "True" -> 1 (true)
+
+  return normalizedLead;
+}
+```
+
+---
+
+## STORY-6: [BE] Service - Deduplication & Merge Strategy
+
+**Description:**
+Implement the core "Non-Destructive" deduplication logic. This is the most critical logic piece.
+
+**File Paths:**
+- `backend/services/LeadService.js` (New)
+- `backend/controllers/importController.js` (Usage)
+
+**Logic / Pseudocode:**
+```javascript
+async function processLead(newLead, agentId) {
+  // 1. Identify Existing Record
+  // Priority 1: Phone
+  let existing = await db.findOne('leads', { phone: newLead.phone, agent_id: agentId });
+
+  // Priority 2: Email (if no phone match)
+  if (!existing && newLead.email) {
+    existing = await db.findOne('leads', { email: newLead.email, agent_id: agentId });
+  }
+
+  if (!existing) {
+    // SCENARIO A: New Lead
+    return await db.insert('leads', newLead);
+  } else {
+    // SCENARIO B: Existing Lead (Non-Destructive Update)
+    let updates = {};
+
+    // For each field in the newLead...
+    for (const [key, newValue] of Object.entries(newLead)) {
+      const currentValue = existing[key];
+
+      // Update ONLY if current DB value is Null/Empty AND new value has data
+      if ((currentValue === null || currentValue === '') && newValue) {
+        updates[key] = newValue;
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      return await db.update('leads', updates, { lead_id: existing.lead_id });
+    }
+    return { status: 'skipped', reason: 'No new data' };
+  }
+}
+```
+
+---
+
+## STORY-7: [BE] Async Lead Processing (Queue System)
+
+**Description:**
+To handle 20k rows without timing out the request, implement a job queue. The API accepts the chunk, acknowledges receipt, and processes in background.
+
+**File Paths:**
+- `backend/controllers/importController.js` (Update)
+- `backend/services/QueueService.js` (New - Wrapper for BullMQ/Redis)
+
+**Tasks:**
+1. **API Endpoint:** `POST /api/import/process-chunk`
+   - Accepts `{ batchId, leads: [], mapping: {} }`.
+   - Pushes job to Redis Queue: `lead-import-queue`.
+   - Returns `202 Accepted` immediately.
+2. **Worker Process:**
+   - Consumes jobs from `lead-import-queue`.
+   - Iterates through `leads`.
+   - Calls `ValidationService` (Story-5).
+   - Calls `LeadService.processLead` (Story-6).
+   - Updates a "Job Status" (e.g., in Redis or DB) with progress (processed/failed counts).
+
+---
+
+## STORY-8: [FE] Import Progress & Error Handling
+
+**Description:**
+Provide real-time or polled feedback to the user during the import process.
+
+**File Paths:**
+- `frontend/src/components/import/ImportSummary.tsx` (Update)
+
+**Requirements:**
+1. **Progress Bar:** Show progress based on (Chunks Uploaded / Total Chunks) OR poll an endpoint for processed count.
+2. **Error Report:**
+   - If validation fails, collect the rows.
+   - At the end, generate a CSV of "Failed Rows" with a `failure_reason` column for the user to download.
