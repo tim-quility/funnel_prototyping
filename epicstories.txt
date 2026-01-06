@@ -1,0 +1,230 @@
+# Epics & Stories: CSV Lead Import (Productionization)
+
+This document outlines the Epics, User Stories, and Technical Tasks required to productionize the "Import Leads via CSV" feature. It combines requirements from the BSA BRD and the AI Technical Spec.
+
+**Target Systems:**
+- **Frontend:** `frontend/src/components/import/` (React, TypeScript)
+- **Backend:** `backend/controllers/importController.js` (Node.js, Express)
+- **Database:** MySQL (Raw SQL)
+- **Background Jobs:** Redis / BullMQ (Recommended)
+
+---
+
+## Epic 1: Core Import Infrastructure & File Handling
+**Goal:** Ensure the system can robustly handle CSV files up to 20,000 rows without browser freezes or server timeouts, implementing strict file validation.
+
+### Story 1.1: File Upload & Client-Side Validation
+**As a** User,
+**I want** to upload a CSV file via drag-and-drop or file selector,
+**So that** I can import my leads.
+
+**Acceptance Criteria:**
+1.  **UI:** Drag-and-drop zone with visual feedback.
+2.  **Format:** Accept `.csv` files only. Reject `.xls`, `.xlsx` with a clear error message.
+3.  **Encoding:** Support UTF-8 and UTF-8-BOM (Excel exports).
+4.  **Size/Limits:** Enforce max size (approx 10MB) or row count (20,000) check immediately after parsing.
+5.  **Library:** Use `PapaParse` for robust CSV parsing (handling commas in quotes).
+
+**Technical Tasks:**
+- [ ] **Frontend:** Update `frontend/src/components/import/FileUpload.tsx` to use `PapaParse` configuration: `{ skipEmptyLines: true, header: true }`.
+- [ ] **Frontend:** Add validation logic to reject non-CSV MIME types.
+- [ ] **Frontend:** Add error toast/alert if rows > 20,000.
+
+### Story 1.2: Large File Handling (Chunking vs. Background Jobs)
+**As a** Developer,
+**I want** to process large imports asynchronously or in chunks,
+**So that** the request does not time out and the server remains responsive.
+
+**Acceptance Criteria:**
+1.  **Constraint:** A 20k row import must not timeout (Standard HTTP timeout is often 30-60s).
+2.  **Implementation:**
+    - *Option A (Preferred):* Send file/data to backend -> Backend pushes to Redis/BullMQ -> Job processes in background -> Frontend polls for status.
+    - *Option B (Chunking):* Frontend splits CSV into chunks of 1,000 rows and sends sequential requests.
+
+**Technical Tasks:**
+- [ ] **Backend:** Set up BullMQ worker for `importQueue`. (`backend/services/queue.js` - *New File*)
+- [ ] **Backend:** Create POST `/api/import/job` endpoint to accept payload and return `jobId`.
+- [ ] **Frontend:** Refactor `importLeadsCSV` in `frontend/src/utils/import-api.ts` to handle the chosen async method (polling or chunking).
+- [ ] **Backend:** Ensure `backend/controllers/importController.js` logic is moved to the worker/service layer to run outside the HTTP request loop.
+
+---
+
+## Epic 2: Data Mapping & Profiles
+**Goal:** Allow users to map CSV columns to system fields and save these configurations for repeated use.
+
+### Story 2.1: Advanced Field Mapping UI
+**As a** User,
+**I want** to map my CSV headers to Funnel DB fields,
+**So that** the data lands in the correct place.
+
+**Acceptance Criteria:**
+1.  **Auto-Mapping:** Automatically match fields with identical names (case-insensitive) (e.g., "Email" -> "email").
+2.  **Manual Mapping:** Dropdown for each CSV column showing available System Fields.
+3.  **Validation:**
+    - Prevent mapping the same CSV column to multiple System Fields (grey out used options).
+    - Exception: "Custom Fields" can be mapped multiple times up to 50 columns (per R-28).
+4.  **Required Fields:** Prevent proceeding if `borrower_cell` (Phone) or `email` is not mapped. at least one State/Zip must be present.
+
+**Technical Tasks:**
+- [ ] **Frontend:** Enhance `frontend/src/components/import/FieldMapper.tsx` to track used fields.
+- [ ] **Frontend:** Add logic to allow "Custom Info" to be selected multiple times, but unique system fields only once.
+- [ ] **Frontend:** Implement validation rules before enabling the "Next" button.
+
+### Story 2.2: Saved Mapping Profiles (Database & API)
+**As a** User,
+**I want** to save my field mapping configuration,
+**So that** I don't have to manually re-map columns for consistent lead sources.
+
+**Acceptance Criteria:**
+1.  **Save:** Option to "Save as New Profile" at the end of the mapping step.
+2.  **Load:** Dropdown at the start of mapping to "Load Saved Profile".
+3.  **Management:** Ability to Rename or Delete a saved profile.
+4.  **Persistence:** Profiles are stored in the database, not local storage.
+
+**Technical Tasks:**
+- [ ] **Database:** Create table `import_mapping_profiles`:
+    ```sql
+    CREATE TABLE import_mapping_profiles (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      agent_id INT NOT NULL,
+      profile_name VARCHAR(255) NOT NULL,
+      mapping_json JSON NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    ```
+- [ ] **Backend:** Create GET/POST/DELETE routes in `backend/routes/import.js` for `/profiles`.
+- [ ] **Backend:** Implement controller logic in `backend/controllers/importController.js` to handle profile CRUD.
+- [ ] **Frontend:** Add "Save Profile" modal in `ImportLeadsPage.tsx` or `ImportSummary.tsx`.
+- [ ] **Frontend:** Add "Load Profile" selector in `FieldMapper.tsx`.
+
+---
+
+## Epic 3: Data Logic, Validation & Deduplication
+**Goal:** Ensure data integrity through strict validation and smart, non-destructive merging.
+
+### Story 3.1: Strict Data Validation
+**As a** System,
+**I want** to validate and format incoming data types,
+**So that** the database remains clean.
+
+**Acceptance Criteria:**
+1.  **Phone:** Strip non-digits. Must be 10 digits. Reject if invalid.
+2.  **Date:** Convert various formats (MM/DD/YYYY) to SQL format (YYYY-MM-DD).
+3.  **Tobacco:** Convert "Yes/No/Y/N" to boolean (1/0).
+4.  **Zip:** Ensure valid format (5 digits).
+5.  **State:** Validate against US states list. Store 2-letter code.
+6.  **Error Handling:** If validation fails, do not import the row. Add to "Failed Rows" list.
+
+**Technical Tasks:**
+- [ ] **Backend:** Implement a validation utility service/function (e.g., `validateRow(row)`) in the import worker.
+- [ ] **Backend:** Use a library like `moment` or `date-fns` for robust date parsing.
+- [ ] **Frontend:** (Optional) Pre-validate in `DataPreview.tsx` to give immediate feedback.
+
+### Story 3.2: Non-Destructive Deduplication
+**As a** User,
+**I want** existing leads to be updated with new info only if the current field is empty,
+**So that** I don't overwrite valuable existing data with generic CSV data.
+
+**Acceptance Criteria:**
+1.  **Identity:** Match on Phone Number (Primary) and Email (Secondary).
+2.  **Logic:**
+    - If Lead does **not exist** -> Insert New.
+    - If Lead **exists**:
+        - Check each mapped field.
+        - If DB field is `NULL` or `""` AND CSV field has data -> **UPDATE**.
+        - If DB field has data -> **SKIP** (Keep existing).
+3.  **Scope:** Check against `agent_id`'s leads only.
+
+**Technical Tasks:**
+- [ ] **Backend:** Write SQL logic for "Upsert with Conditional Update".
+    - *Note:* Standard `ON DUPLICATE KEY UPDATE` overwrites. You may need a `SELECT` then `INSERT/UPDATE` logic or a complex SQL `CASE` statement:
+    - `borrower_last = IF(borrower_last IS NULL OR borrower_last = '', VALUES(borrower_last), borrower_last)`
+- [ ] **Backend:** Ensure the lookup is scoped to the `agent_id`.
+
+---
+
+## Epic 4: Tenant Specifics & Integration
+**Goal:** Support specific business rules for Q2A (Symmetry) and Conservation tenants.
+
+### Story 4.1: Status & Lead Type Injection
+**As a** User,
+**I want** to map CSV statuses/types to System IDs,
+**So that** leads enter the system in the correct state.
+
+**Acceptance Criteria:**
+1.  **Status Mapping:** If a CSV column is mapped to `status`, show a UI to map unique CSV values (e.g., "Sold") to System Status IDs.
+    - Default: If unmapped, set to "New".
+2.  **Lead Type:**
+    - If `lead_type` is in CSV -> Map unique values.
+    - If NOT in CSV -> Prompt user to select a Global Lead Type for the batch.
+3.  **Validation:** User cannot proceed until all unique values are mapped.
+
+**Technical Tasks:**
+- [ ] **Frontend:** Finalize `StatusMapper.tsx` and `TypeMapper.tsx` logic.
+- [ ] **Backend:** Ensure `status_id` and `lead_type` are correctly ingested.
+- [ ] **Backend:** (Logic) `parent_status` must be derived from `status_id`.
+
+### Story 4.2: Q2A LCR Integration
+**As a** Q2A Agent,
+**I want** my imported leads to be registered with LCR,
+**So that** I have a valid `LeadCode` for compliance.
+
+**Acceptance Criteria:**
+1.  **Trigger:** Only for agents in Q2A tenant.
+2.  **Action:** For every *newly created* lead, call the LCR `createLead` endpoint.
+3.  **Endpoint:** `https://apim-quility-stage-eastus.azure-api.net/leadgenwithkey/leads/createLead`
+4.  **Payload:** Map local lead fields to LCR expected JSON.
+5.  **Output:** Save the returned `LeadCode` to the database.
+6.  **Failure:** If LCR fails, log the error but do not fail the whole import (Lead is created locally).
+
+**Technical Tasks:**
+- [ ] **Backend:** Create `backend/services/lcrService.js`.
+- [ ] **Backend:** Add `axios` call to LCR endpoint.
+- [ ] **Backend:** Integrate LCR call into the Import Worker loop (post-insertion).
+
+### Story 4.3: Conservation Tenant
+**As a** Conservation Agent,
+**I want** to access this feature,
+**So that** I can import my specific lead lists.
+
+**Acceptance Criteria:**
+1.  **Access:** Feature flag/Permission check to ensure this tenant has access.
+2.  **Default:** Conservation agents act as their own B2B tenant.
+
+**Technical Tasks:**
+- [ ] **Frontend:** Check `user.tenant` or permissions before rendering the "Import" sidebar item.
+
+---
+
+## Epic 5: Reporting & Post-Import
+**Goal:** Provide clear feedback on the import result.
+
+### Story 5.1: Import Summary & Failed Records Export
+**As a** User,
+**I want** to see a summary of the import and download any failures,
+**So that** I can fix and retry the bad rows.
+
+**Acceptance Criteria:**
+1.  **Summary Stats:**
+    - Total Rows Processed.
+    - Successfully Created.
+    - Successfully Updated (Duplicates).
+    - Failed (Validation Errors).
+2.  **Download:** "Download Failed Rows CSV" button.
+    - CSV must contain original data + `failure_reason` column (e.g., "Invalid Phone").
+
+**Technical Tasks:**
+- [ ] **Backend:** The import job must accumulate `failedRows` array.
+- [ ] **Frontend:** `ImportSummary.tsx` must render the stats.
+- [ ] **Frontend:** Implement CSV generation for the failed rows array (use `PapaParse.unparse`).
+
+### Story 5.2: Import Logging
+**As a** Support Admin,
+**I want** to see logs of imports,
+**So that** I can troubleshoot issues.
+
+**Acceptance Criteria:**
+1.  **Log:** `agent_id`, `timestamp`, `filename`, `row_count`, `error_count`.
+
+**Technical Tasks:**
+- [ ] **Backend:** Add logging (winston or database log table) for every import job completion.
